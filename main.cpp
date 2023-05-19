@@ -47,8 +47,25 @@ gsl::span<Designer*> spanListeDesigners(const ListeDesigners& liste)
 // Cette fonction renvoie le pointeur vers le designer si elle le trouve dans
 // un des jeux de la ListeJeux. En cas contraire, elle renvoie un pointeur nul.
 
+Designer* trouverDesignerParNom(const ListeJeux& listeJeux, string nomDesginer)
+{
+	if (listeJeux.elements == nullptr)
+	{
+		return nullptr;
+	}
 
-Designer* lireDesigner(istream& fichier)
+	for (Jeu* jeu : span<Jeu*>(listeJeux.elements, listeJeux.nElements))
+		for (Designer* designer : span<Designer*>(jeu->designers.elements, jeu->designers.nElements))
+			if (designer->nom == nomDesginer)
+				return designer;
+
+			else
+				return nullptr;
+
+}
+
+
+Designer* lireDesigner(istream& fichier, const ListeJeux& listeJeux)
 {
 	Designer designer = {}; // On initialise une structure vide de type Designer.
 	designer.nom = lireString(fichier);
@@ -57,11 +74,24 @@ Designer* lireDesigner(istream& fichier)
 	// Rendu ici, les champs précédents de la structure designer sont remplis
 	// avec la bonne information.
 
-	//TODO: Ajouter en mémoire le designer lu. Il faut revoyer le pointeur créé.
+	//TODO: Ajouter en mémoire le designer lu. Il faut renvoyer le pointeur créé.
 	// Attention, valider si le designer existe déjà avant de le créer, sinon
 	// on va avoir des doublons car plusieurs jeux ont des designers en commun
 	// dans le fichier binaire. Pour ce faire, cette fonction aura besoin de
 	// la liste de jeux principale en paramètre.
+
+	Designer* designerRecherche = trouverDesignerParNom(listeJeux, designer.nom); 
+		if (designerRecherche == nullptr)
+		{
+			Designer* nouveauDesigner = new Designer;
+			*nouveauDesigner = designer;
+			cout << "l'allocation du designer" << designerRecherche->nom << "est réussie" << endl;
+			return nouveauDesigner;
+
+		}
+		
+		return designerRecherche;
+
 	// Afficher un message lorsque l'allocation du designer est réussie.
 	cout << designer.nom << endl;  //TODO: Enlever cet affichage temporaire servant à voir que le code fourni lit bien les jeux.
 	return {}; //TODO: Retourner le pointeur vers le designer crée.
@@ -73,11 +103,41 @@ Designer* lireDesigner(istream& fichier)
 // avait dans l'ancien, et éliminer l'ancien trop petit. N'oubliez pas, on copie
 // des pointeurs de jeux. Il n'y a donc aucune nouvelle allocation de jeu ici !
 
+void redimensionnerTableauJeux(ListeJeux& listeJeux, unsigned nouvelleCapacite)
+{
+	listeJeux.capacite = nouvelleCapacite;
+	Jeu** nouveauTableauJeu = new Jeu * [listeJeux.capacite];
+
+	for (int i = 0; i < listeJeux.nElements; i++)
+	{
+		nouveauTableauJeu[i] = listeJeux.elements[i];
+	}
+
+	delete[] listeJeux.elements;
+	listeJeux.elements = nouveauTableauJeu;
+}
+
+
 //TODO: Fonction pour ajouter un Jeu à ListeJeux.
 // Le jeu existant déjà en mémoire, on veut uniquement ajouter le pointeur vers
 // le jeu existant. De plus, en cas de saturation du tableau elements, cette
 // fonction doit doubler la taille du tableau elements de ListeJeux.
 // Utilisez la fonction pour changer la taille du tableau écrite plus haut.
+
+void ajouterJeu(ListeJeux& listeJeux, Jeu* jeu)
+{
+	if (listeJeux.nElements >= listeJeux.capacite)
+	{
+		unsigned nouvelleCapacite = listeJeux.capacite * 2;
+		redimensionnerTableauJeux(listeJeux, nouvelleCapacite);
+	}
+
+	listeJeux.elements[listeJeux.nElements] = jeu;
+	listeJeux.nElements++;
+
+}
+
+
 
 //TODO: Fonction qui enlève un jeu de ListeJeux.
 // Attention, ici il n'a pas de désallocation de mémoire. Elle enlève le
@@ -86,7 +146,28 @@ Designer* lireDesigner(istream& fichier)
 // jeu à être retiré par celui présent en fin de liste et décrémenter la taille
 // de celle-ci.
 
-Jeu* lireJeu(istream& fichier)
+void enleverJeu(ListeJeux& listeJeux, Jeu* jeu)
+{
+	int index = 0;
+
+	for (int i = 0; i < listeJeux.nElements; i++)
+	{
+		if (listeJeux.elements[i] == jeu)
+		{
+			break;
+		}
+
+		index++;
+
+	}
+
+	listeJeux.elements[index] = listeJeux.elements[listeJeux.nElements - 1];
+	listeJeux.elements[listeJeux.nElements - 1] = nullptr;
+	listeJeux.nElements--;
+
+}
+
+Jeu* lireJeu(istream& fichier, ListeJeux& listeJeux)
 {
 	Jeu jeu = {}; // On initialise une structure vide de type Jeu
 	jeu.titre = lireString(fichier);
@@ -96,17 +177,34 @@ Jeu* lireJeu(istream& fichier)
 	// Rendu ici, les champs précédents de la structure jeu sont remplis avec la
 	// bonne information.
 
-	//TODO: Ajouter en mémoire le jeu lu. Il faut revoyer le pointeur créé.
+
+	//TODO: Ajouter en mémoire le jeu lu. Il faut renvoyer le pointeur créé.
 	// Attention, il faut aussi créer un tableau dynamique pour les designers
 	// que contient un jeu. Servez-vous de votre fonction d'ajout de jeu car la
 	// liste de jeux participé est une ListeJeu. Afficher un message lorsque
 	// l'allocation du jeu est réussie.
-	cout << jeu.titre << endl;  //TODO: Enlever cet affichage temporaire servant à voir que le code fourni lit bien les jeux.
+
+	Jeu* pointeurJeu = new Jeu(jeu);
+	pointeurJeu->designers.elements = new Designer * [pointeurJeu->designers.nElements];
+	pointeurJeu->designers.nElements = 0;
+
+
+	//cout << jeu.titre << endl;  //TODO: Enlever cet affichage temporaire servant à voir que le code fourni lit bien les jeux.
+
 	for ([[maybe_unused]] int i : iter::range(jeu.designers.nElements)) {
-		lireDesigner(fichier);  //TODO: Mettre le designer dans la liste des designer du jeu.
+		Designer* pointeurDesigner = lireDesigner(fichier, listeJeux);  //TODO: Mettre le designer dans la liste des designer du jeu.
+		pointeurJeu->designers.elements[i] = pointeurDesigner;
+		pointeurJeu->designers.nElements++;
+
 		//TODO: Ajouter le jeu à la liste des jeux auquel a participé le designer.
+		pointeurDesigner->listeJeuxParticipes.elements[pointeurDesigner->listeJeuxParticipes.nElements++] = pointeurJeu;
+		ajouterJeu(listeJeux, pointeurJeu);
+		cout<< "Allocation réussi du jeu" << pointeurJeu->titre << endl;
+
 	}
-	return {}; //TODO: Retourner le pointeur vers le nouveau jeu.
+
+	pointeurJeu->designers.capacite = pointeurJeu->designers.nElements;
+	return pointeurJeu; //TODO: Retourner le pointeur vers le nouveau jeu.
 }
 
 ListeJeux creerListeJeux(const string& nomFichier)
@@ -117,7 +215,7 @@ ListeJeux creerListeJeux(const string& nomFichier)
 	ListeJeux listeJeux = {};
 	for([[maybe_unused]] int n : iter::range(nElements))
 	{
-		lireJeu(fichier); //TODO: Ajouter le jeu à la ListeJeux.
+		lireJeu(fichier, listeJeux); //TODO: Ajouter le jeu à la ListeJeux.
 	}
 
 	return {}; //TODO: Renvoyer la ListeJeux.
