@@ -49,19 +49,18 @@ gsl::span<Designer*> spanListeDesigners(const ListeDesigners& liste)
 
 Designer* trouverDesignerParNom(ListeJeux& listeJeux, string nomDesigner)
 {
-	if (listeJeux.elements == nullptr)
-	{
-		return nullptr;
-	}
 
 	for (Jeu* jeu : span<Jeu*>(listeJeux.elements, listeJeux.nElements))
-	{
+	{	
 		for (Designer* designer : span<Designer*>(jeu->designers.elements, jeu->designers.nElements))
-		{
+	
+		{ 
 			if (designer->nom == nomDesigner)
 			{
 				return designer;
 			}
+
+		   
 		}
 	}
 
@@ -69,7 +68,7 @@ Designer* trouverDesignerParNom(ListeJeux& listeJeux, string nomDesigner)
 }
 
 
-Designer* lireDesigner(istream& fichier, ListeJeux& listeJeux, Jeu* pointeurJeu)
+Designer* lireDesigner(istream& fichier, ListeJeux& listeJeux)
 {
 	Designer designer = {}; // On initialise une structure vide de type Designer.
 	designer.nom = lireString(fichier);
@@ -86,20 +85,14 @@ Designer* lireDesigner(istream& fichier, ListeJeux& listeJeux, Jeu* pointeurJeu)
 
 	Designer* designerRecherche = trouverDesignerParNom(listeJeux, designer.nom); 
 		
-			if (designerRecherche == nullptr)
-		    {
-			Designer* nouveauDesigner = new Designer(designer);
-			nouveauDesigner->listeJeuxParticipes.elements = new Jeu * [40];
-			cout << "L'allocation du designer est réussie" << endl;
-			return nouveauDesigner;
+	if (designerRecherche == nullptr)
+		designerRecherche = new Designer(designer);
 
-		    }
-			designerRecherche->listeJeuxParticipes.elements[designerRecherche->listeJeuxParticipes.nElements++];
-			pointeurJeu->designers.elements[pointeurJeu->designers.nElements] = designerRecherche;
-			pointeurJeu->designers.nElements++;
-	// Afficher un message lorsque l'allocation du designer est réussie.
+	cout << "L'allocation du designer " << designerRecherche->nom << "est réussie." << endl;
+	return designerRecherche;
+	 // Afficher un message lorsque l'allocation du designer est réussie.
 	//cout << designer.nom << endl;  //TODO: Enlever cet affichage temporaire servant à voir que le code fourni lit bien les jeux.
-	return nullptr; //TODO: Retourner le pointeur vers le designer crée.
+			//sreturn nullptr;//TODO: Retourner le pointeur vers le designer crée.
 }
 
 //TODO: Fonction qui change la taille du tableau de jeux de ListeJeux.
@@ -117,10 +110,9 @@ void redimensionnerTableauJeux(ListeJeux& listeJeux, unsigned nouvelleCapacite)
 	{
 		nouveauTableauJeu[i] = listeJeux.elements[i];
 	}
-
-	listeJeux.capacite = nouvelleCapacite;
-	delete[] listeJeux.elements;
 	listeJeux.elements = nouveauTableauJeu;
+	listeJeux.capacite = nouvelleCapacite;
+	
 }
 
 
@@ -224,18 +216,14 @@ Jeu* lireJeu(istream& fichier, ListeJeux& listeJeux)
 
 	for ([[maybe_unused]] int i : iter::range(jeu.designers.nElements))
 	{ 
-		Designer* pointeurDesigner = lireDesigner(fichier, listeJeux, pointeurJeu);
+		Designer* pointeurDesigner = lireDesigner(fichier, listeJeux);
 
-		if (pointeurDesigner == nullptr)
-		{
-			pointeurDesigner->listeJeuxParticipes.elements = new Jeu * [40];
-			pointeurDesigner->listeJeuxParticipes.elements[pointeurDesigner->listeJeuxParticipes.nElements++] = pointeurJeu;
-			pointeurJeu->designers.elements[i] = pointeurDesigner;
-			pointeurJeu->designers.nElements++;
-		}
+		pointeurJeu->designers.elements[i] = pointeurDesigner;
+		ajouterJeu(pointeurDesigner->listeJeuxParticipes, pointeurJeu);
 
 	}
-	pointeurJeu->designers.capacite = pointeurJeu->designers.nElements;
+
+	cout << "L'allocation du jeu " << pointeurJeu->titre << "est réussie." << endl;
 	return pointeurJeu; //TODO: Retourner le pointeur vers le nouveau jeu.
 }
 
@@ -262,11 +250,8 @@ ListeJeux creerListeJeux(const string& nomFichier)
 
 void detruireDesigner(Designer* designer)
 {
-	string nomDesignerDetruit = designer->nom;
+	cout << "Le pointeur du designer " << designer->nom << " est détruit." << endl;
 	delete[] designer->listeJeuxParticipes.elements;
-	designer = nullptr;
-
-	cout << nomDesignerDetruit << " est détruit." << endl;
 }
 
 //TODO: Fonction qui détermine si un designer participe encore à un jeu.
@@ -312,95 +297,93 @@ void detruireJeu(int jeuIndex, ListeJeux& listeJeux)
 	jeu = nullptr;
 	
 }
-//
-//
-////TODO: Fonction pour détruire une ListeJeux et tous ses jeux.
-//
-//void detruireListeJeux(ListeJeux& listeJeux)
-//{
-//	if (listeJeux.elements == nullptr)
-//	{
-//		return;
-//	}
-//
-//	for (Jeu* jeu : span(listeJeux.elements, listeJeux.nElements))
-//	{
-//		detruireJeu(0, listeJeux);
-//	}
-//
-//	delete[] listeJeux.elements;
-//	listeJeux.elements = nullptr;
-//}
-//
-//void afficherDesigner(const Designer& d)
-//{
-//	cout << "\t" << d.nom << ", " << d.anneeNaissance << ", " << d.pays
-//			  << endl;
-//}
-//
-////TODO: Fonction pour afficher les infos d'un jeu ainsi que ses designers.
-//// Servez-vous de la fonction afficherDesigner ci-dessus.
-//
-//void afficherJeu(const Jeu* jeu)
-//{
-//	cout << "Jeu: " << jeu->titre << endl;
-//	cout << "Annee de sortie: " << jeu->anneeSortie << endl;
-//	cout << "Développeur " << jeu->developpeur << endl;
-//	cout << "Les designers " << endl;
-//	for (Designer* designer : span <Designer*>(jeu->designers.elements, jeu->designers.nElements))
-//	{
-//		afficherDesigner(*designer);
-//	}
-//}
-//
-////TODO: Fonction pour afficher tous les jeux de ListeJeux, séparés par un ligne.
-//// Servez-vous de la fonction d'affichage d'un jeu crée ci-dessus. Votre ligne
-//// de séparation doit être différent de celle utilisée dans le main.
-//
-//void afficherListeJeux (const ListeJeux& listeJeux)
-//{
-//	static const string ligneDeSeparation = "------------------------------------------------------------------------------------------------------------------------";
-//	cout << ligneDeSeparation;
-//	
-//	for (Jeu* jeuAffiche : span<Jeu*>(listeJeux.elements, listeJeux.nElements)) {
-//		
-//		afficherJeu(jeuAffiche);
-//		cout << ligneDeSeparation;
-//	}
-//}
-//
-//
+
+
+//TODO: Fonction pour détruire une ListeJeux et tous ses jeux.
+
+void detruireListeJeux(ListeJeux& listeJeux)
+{
+	if (listeJeux.elements == nullptr)
+	{
+		return;
+	}
+
+	for (Jeu* jeu : span(listeJeux.elements, listeJeux.nElements))
+	{
+		detruireJeu(0, listeJeux);
+	}
+
+	delete[] listeJeux.elements;
+	listeJeux.elements = nullptr;
+}
+
+void afficherDesigner(const Designer& d)
+{
+	cout << "\t" << d.nom << ", " << d.anneeNaissance << ", " << d.pays
+			  << endl;
+}
+
+//TODO: Fonction pour afficher les infos d'un jeu ainsi que ses designers.
+// Servez-vous de la fonction afficherDesigner ci-dessus.
+
+void afficherJeu(const Jeu* jeu)
+{
+	cout << "Jeu: " << jeu->titre << endl;
+	cout << "Annee de sortie: " << jeu->anneeSortie << endl;
+	cout << "Développeur " << jeu->developpeur << endl;
+	cout << "Les designers " << endl;
+	for (Designer* designer : span <Designer*>(jeu->designers.elements, jeu->designers.nElements))
+	{
+		afficherDesigner(*designer);
+	}
+}
+
+//TODO: Fonction pour afficher tous les jeux de ListeJeux, séparés par un ligne.
+// Servez-vous de la fonction d'affichage d'un jeu crée ci-dessus. Votre ligne
+// de séparation doit être différent de celle utilisée dans le main.
+
+void afficherListeJeux (const ListeJeux& listeJeux)
+{
+	static const string ligneDeSeparation = "------------------------------------------------------------------------------------------------------------------------";
+	cout << ligneDeSeparation;
+	
+	for (Jeu* jeuAffiche : span<Jeu*>(listeJeux.elements, listeJeux.nElements)) {
+		
+		afficherJeu(jeuAffiche);
+		cout << ligneDeSeparation;
+	}
+}
+
+
 int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 {
-	//#pragma region "Bibliothèque du cours"
+	#pragma region "Bibliothèque du cours"
 	// Permet sous Windows les "ANSI escape code" pour changer de couleur
-	// https://en.wikipedia.org/wiki/ANSI_escape_code ; les consoles Linux/Mac
-	// les supportent normalement par défaut.
-	bibliotheque_cours::activerCouleursAnsi(); 
+	 https://en.wikipedia.org/wiki/ANSI_escape_code ; les consoles Linux/Mac
+	 //les supportent normalement par défaut.
+	//bibliotheque_cours::activerCouleursAnsi(); 
 	#pragma endregion
-//
-//	//int* fuite = new int;  // Pour vérifier que la détection de fuites fonctionne; un message devrait dire qu'il y a une fuite à cette ligne.
-//
+
+	int* fuite = new int;  // Pour vérifier que la détection de fuites fonctionne; un message devrait dire qu'il y a une fuite à cette ligne.
+
 	ListeJeux listeJeux = creerListeJeux("jeux.bin"); //TODO: Appeler correctement votre fonction de création de la liste de jeux.
-//
-//	//static const string ligneSeparation = "\n\033[35m════════════════════════════════════════\033[0m\n";
-//	//cout << ligneSeparation << endl;
-//	//cout << "Premier jeu de la liste :" << endl;
-//	////TODO: Afficher le premier jeu de la liste (en utilisant la fonction).  Devrait être Chrono Trigger.
-//	//cout << ligneSeparation << endl;
-//	//cout << "Premier jeu de la liste : " << endl;
-//	//cout << listeJeux.elements[0]->titre << endl;
-//	//cout << ligneSeparation << endl;
-//
-//	//TODO: Appel à votre fonction d'affichage de votre liste de jeux.
-//	
-////	afficherListeJeux(listeJeux);
-////
-////	//TODO: Faire les appels à toutes vos fonctions/méthodes pour voir qu'elles fonctionnent et avoir 0% de lignes non exécutées dans le programme (aucune ligne rouge dans la couverture de code; c'est normal que les lignes de "new" et "delete" soient jaunes).  Vous avez aussi le droit d'effacer les lignes du programmes qui ne sont pas exécutée, si finalement vous pensez qu'elle ne sont pas utiles.
-////
-////	
-////	//TODO: Détruire tout avant de terminer le programme.  Devrait afficher "Aucune fuite detectee." a la sortie du programme; il affichera "Fuite detectee:" avec la liste des blocs, s'il manque des delete.
-////
-////	detruireListeJeux(listeJeux);
-////	delete fuite;
+
+	static const string ligneSeparation = "\n\033[35m════════════════════════════════════════\033[0m\n";
+	//TODO: Afficher le premier jeu de la liste (en utilisant la fonction).  Devrait être Chrono Trigger.
+	cout << ligneSeparation << endl;
+	cout << "Premier jeu de la liste : " << endl;
+	cout << listeJeux.elements[0]->titre << endl;
+	cout << ligneSeparation << endl;
+
+	////TODO: Appel à votre fonction d'affichage de votre liste de jeux.
+	////
+	//afficherListeJeux(listeJeux);
+
+	////TODO: Faire les appels à toutes vos fonctions/méthodes pour voir qu'elles fonctionnent et avoir 0% de lignes non exécutées dans le programme (aucune ligne rouge dans la couverture de code; c'est normal que les lignes de "new" et "delete" soient jaunes).  Vous avez aussi le droit d'effacer les lignes du programmes qui ne sont pas exécutée, si finalement vous pensez qu'elle ne sont pas utiles.
+
+	//
+	////TODO: Détruire tout avant de terminer le programme.  Devrait afficher "Aucune fuite detectee." a la sortie du programme; il affichera "Fuite detectee:" avec la liste des blocs, s'il manque des delete.
+
+	detruireListeJeux(listeJeux);
+	
 }
