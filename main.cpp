@@ -150,26 +150,25 @@ void ajouterJeu(ListeJeux& listeJeux, Jeu* jeu)
 // jeu à être retiré par celui présent en fin de liste et décrémenter la taille
 // de celle-ci.
 
-void enleverJeu(ListeJeux& listeJeux, Jeu* jeu)
+void enleverJeu( ListeJeux& listeJeux,const Jeu* pointeurJeu)
 {
-	int index = 0;
+	Jeu** elements = listeJeux.elements;
+	unsigned int& nElements = listeJeux.nElements;
 
-	for (unsigned i = 0; i < listeJeux.nElements; i++)
+	for (int i = 0; i < nElements; i++)
 	{
-		if (listeJeux.elements[i] == jeu)
+		if (elements[i] == pointeurJeu)
 		{
-			break;
+			if (i != nElements - 1)
+			{
+				elements[i] = elements[nElements - 1];
+			}
+			nElements--;
+			return;
 		}
-
-		index++;
-
 	}
-
-	listeJeux.elements[index] = listeJeux.elements[listeJeux.nElements - 1];
-	listeJeux.elements[listeJeux.nElements - 1] = nullptr;
-	listeJeux.nElements--;
-
 }
+
 
 void enleverDesigner(ListeDesigners& listeDesigner, Designer* designer)
 {
@@ -252,7 +251,9 @@ void detruireDesigner(Designer* designer)
 {
 	cout << "Le pointeur du designer " << designer->nom << " est détruit." << endl;
 	delete[] designer->listeJeuxParticipes.elements;
+	delete designer;
 }
+
 
 //TODO: Fonction qui détermine si un designer participe encore à un jeu.
 
@@ -274,48 +275,33 @@ bool designerParticipe(Designer* designer)
 //// jeux présents dans sa liste de jeux participés, il faut le supprimer.  Pour
 //// fins de débogage, affichez le nom du jeu lors de sa destruction.
 
-void detruireJeu(int jeuIndex, ListeJeux& listeJeux)
+void detruirejeu(Jeu* pointeurJeu, ListeJeux& listeJeu)
 {
-	Jeu* jeu = listeJeux.elements[jeuIndex];
-
-	enleverJeu(listeJeux, jeu);
-
-	for (Designer* designer : span(jeu->designers.elements, jeu->designers.nElements)) {
-		designer->listeJeuxParticipes.nElements--;
-
-		if (designer->listeJeuxParticipes.nElements == 0)
+	for (Designer* pointeurDesigner : spanListeDesigners(pointeurJeu->designers))
+	{
+		enleverJeu(pointeurDesigner->listeJeuxParticipes, pointeurJeu);
+		if (!designerParticipe(pointeurDesigner))
 		{
-			delete[] designer->listeJeuxParticipes.elements;
-			delete designer;
-			designer = nullptr;
-
+			detruireDesigner(pointeurDesigner);
+			
 		}
 	}
 
-	delete[] jeu->designers.elements;
-	delete jeu;
-	jeu = nullptr;
-	
+	cout << "Le pointeur du jeu " << pointeurJeu->titre << " a été détruit." << endl;
+	delete[] pointeurJeu->designers.elements;
+	delete pointeurJeu;
 }
-
-
-//TODO: Fonction pour détruire une ListeJeux et tous ses jeux.
 
 void detruireListeJeux(ListeJeux& listeJeux)
 {
-	if (listeJeux.elements == nullptr)
+	for (Jeu* pointeurJeu : spanListeJeux(listeJeux))
 	{
-		return;
+		detruirejeu(pointeurJeu, listeJeux);
+		delete pointeurJeu;
 	}
-
-	for (Jeu* jeu : span(listeJeux.elements, listeJeux.nElements))
-	{
-		detruireJeu(0, listeJeux);
-	}
-
 	delete[] listeJeux.elements;
-	listeJeux.elements = nullptr;
 }
+
 
 void afficherDesigner(const Designer& d)
 {
@@ -330,8 +316,8 @@ void afficherJeu(const Jeu* jeu)
 {
 	cout << "Jeu: " << jeu->titre << endl;
 	cout << "Annee de sortie: " << jeu->anneeSortie << endl;
-	cout << "Développeur " << jeu->developpeur << endl;
-	cout << "Les designers " << endl;
+	cout << "Développeur: " << jeu->developpeur << endl;
+	cout << "Les designers: " << endl;
 	for (Designer* designer : span <Designer*>(jeu->designers.elements, jeu->designers.nElements))
 	{
 		afficherDesigner(*designer);
@@ -345,12 +331,12 @@ void afficherJeu(const Jeu* jeu)
 void afficherListeJeux (const ListeJeux& listeJeux)
 {
 	static const string ligneDeSeparation = "------------------------------------------------------------------------------------------------------------------------";
-	cout << ligneDeSeparation;
+	cout <<ligneDeSeparation;
 	
 	for (Jeu* jeuAffiche : span<Jeu*>(listeJeux.elements, listeJeux.nElements)) {
 		
 		afficherJeu(jeuAffiche);
-		cout << ligneDeSeparation;
+		cout << ligneDeSeparation << endl;
 	}
 }
 
@@ -377,7 +363,7 @@ int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 
 	////TODO: Appel à votre fonction d'affichage de votre liste de jeux.
 	////
-	//afficherListeJeux(listeJeux);
+	afficherListeJeux(listeJeux);
 
 	////TODO: Faire les appels à toutes vos fonctions/méthodes pour voir qu'elles fonctionnent et avoir 0% de lignes non exécutées dans le programme (aucune ligne rouge dans la couverture de code; c'est normal que les lignes de "new" et "delete" soient jaunes).  Vous avez aussi le droit d'effacer les lignes du programmes qui ne sont pas exécutée, si finalement vous pensez qu'elle ne sont pas utiles.
 
