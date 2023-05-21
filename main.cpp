@@ -88,7 +88,7 @@ Designer* lireDesigner(istream& fichier, ListeJeux& listeJeux)
 	if (designerRecherche == nullptr)
 		designerRecherche = new Designer(designer);
 
-	cout << "L'allocation du designer " << designerRecherche->nom << "est réussie." << endl;
+	cout << "L'allocation du designer " << designerRecherche->nom << " est réussie." << endl;
 	return designerRecherche;
 	 // Afficher un message lorsque l'allocation du designer est réussie.
 	//cout << designer.nom << endl;  //TODO: Enlever cet affichage temporaire servant à voir que le code fourni lit bien les jeux.
@@ -222,7 +222,7 @@ Jeu* lireJeu(istream& fichier, ListeJeux& listeJeux)
 
 	}
 
-	cout << "L'allocation du jeu " << pointeurJeu->titre << "est réussie." << endl;
+	cout << "L'allocation du jeu " << pointeurJeu->titre << " est réussie." << endl;
 	return pointeurJeu; //TODO: Retourner le pointeur vers le nouveau jeu.
 }
 
@@ -249,9 +249,9 @@ ListeJeux creerListeJeux(const string& nomFichier)
 
 void detruireDesigner(Designer* designer)
 {
-	cout << "Le pointeur du designer " << designer->nom << " est détruit." << endl;
+	string nom = designer->nom;
 	delete[] designer->listeJeuxParticipes.elements;
-	delete designer;
+	cout << "Le pointeur du designer " << nom << " est détruit." << endl;
 }
 
 
@@ -259,10 +259,11 @@ void detruireDesigner(Designer* designer)
 
 bool designerParticipe(Designer* designer)
 {
-	if (designer->listeJeuxParticipes.elements != 0)
+	if (designer->listeJeuxParticipes.nElements != 0)
 	{
 		return true;
 	}
+	
 
 	return false;
 }
@@ -275,31 +276,44 @@ bool designerParticipe(Designer* designer)
 //// jeux présents dans sa liste de jeux participés, il faut le supprimer.  Pour
 //// fins de débogage, affichez le nom du jeu lors de sa destruction.
 
-void detruirejeu(Jeu* pointeurJeu, ListeJeux& listeJeu)
+void detruirejeu(Jeu* pointeurJeu)
 {
 	for (Designer* pointeurDesigner : spanListeDesigners(pointeurJeu->designers))
 	{
-		enleverJeu(pointeurDesigner->listeJeuxParticipes, pointeurJeu);
+		
 		if (!designerParticipe(pointeurDesigner))
 		{
 			detruireDesigner(pointeurDesigner);
+			delete pointeurDesigner;
 			
 		}
+		else
+		{
+			enleverJeu(pointeurDesigner->listeJeuxParticipes, pointeurJeu);
+		}
+
 	}
 
 	cout << "Le pointeur du jeu " << pointeurJeu->titre << " a été détruit." << endl;
 	delete[] pointeurJeu->designers.elements;
-	delete pointeurJeu;
 }
 
 void detruireListeJeux(ListeJeux& listeJeux)
 {
+	if (listeJeux.elements == nullptr)
+	{
+		return;
+	}
+
 	for (Jeu* pointeurJeu : spanListeJeux(listeJeux))
 	{
-		detruirejeu(pointeurJeu, listeJeux);
+		detruirejeu(pointeurJeu);
 		delete pointeurJeu;
 	}
-	delete[] listeJeux.elements;
+
+	delete listeJeux.elements;
+	listeJeux.elements = nullptr;
+	
 }
 
 
@@ -339,7 +353,6 @@ void afficherListeJeux (const ListeJeux& listeJeux)
 		cout << ligneDeSeparation << endl;
 	}
 }
-
 
 int main([[maybe_unused]] int argc, [[maybe_unused]] char** argv)
 {
