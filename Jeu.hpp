@@ -4,8 +4,8 @@
 
 struct Jeu
 {
-	std::string titre;
-	unsigned int anneeSortie;
-	std::string developpeur;
-	ListeDesigners designers;
+    std::string titre;
+    unsigned int anneeSortie;
+    std::string developpeur;
+    ListeDesigners designers;
 };
