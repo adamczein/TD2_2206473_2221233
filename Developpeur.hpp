@@ -1,6 +1,4 @@
-﻿
-
-#pragma once
+﻿#pragma once
 #include "ListeJeux.hpp"
 #include <string>
 #include "Jeu.hpp"
@@ -13,33 +11,40 @@ using namespace gsl;
 class Developpeur
 {
 public:
+    // Constructeurs
     Developpeur();
     Developpeur(const string& nom);
+
+    // Accesseur
     const string& obtenirNom() const;
+
+    // Méthodes
     int compterNombreJeux(const ListeJeux& listeJeux) const;
     void mettreDeveloppeurAJour(ListeJeux& listeTousLesJeux);
     void afficherJeuxDeveloppes();
+
+    // Destructeur
     ~Developpeur();
 
 private:
-    pair<string, ListeJeux> paireNomJeux_;
+    // Membres de données
+    string nom_;
+    ListeJeux jeuxDeveloppes_;
 };
 
 Developpeur::Developpeur()
+    : nom_("Pas de nom"), jeuxDeveloppes_()
 {
-    paireNomJeux_.first = "Pas de nom";
-    paireNomJeux_.second = {};
 }
 
 Developpeur::Developpeur(const string& nom)
+    : nom_(nom), jeuxDeveloppes_()
 {
-    paireNomJeux_.first = nom;
-    paireNomJeux_.second = {};
 }
 
 const string& Developpeur::obtenirNom() const
 {
-    return paireNomJeux_.first;
+    return nom_;
 }
 
 int Developpeur::compterNombreJeux(const ListeJeux& listeJeux) const
@@ -56,31 +61,40 @@ int Developpeur::compterNombreJeux(const ListeJeux& listeJeux) const
 void Developpeur::mettreDeveloppeurAJour(ListeJeux& listeTousLesJeux)
 {
     int tailleListeJeux = compterNombreJeux(listeTousLesJeux);
-    int index = 0;
 
-    delete[] paireNomJeux_.second.elements;
-    paireNomJeux_.second.elements = new Jeu * [tailleListeJeux];
-    paireNomJeux_.second.capacite = tailleListeJeux;
+    // Supprimer l'ancien tableau de jeux développés
+    delete[] jeuxDeveloppes_.elements;
 
+    // Créer un nouveau tableau de jeux développés avec la taille appropriée
+    jeuxDeveloppes_.elements = new Jeu * [tailleListeJeux];
+    jeuxDeveloppes_.capacite = tailleListeJeux;
+    jeuxDeveloppes_.nElements = 0;
+
+    // Parcourir tous les jeux de la liste complète des jeux
     for (Jeu* ptrJeu : span(listeTousLesJeux.elements, listeTousLesJeux.nElements))
+    {
         if (ptrJeu->developpeur == obtenirNom())
         {
-            paireNomJeux_.second.elements[index] = ptrJeu; // Warning pcq le compilateur a peur que l'index depasse la taille du tableau, dans notre cas ca devrait etre correct à cause de compterNbJeux()
-            paireNomJeux_.second.nElements++;
-            index++;
+            // Ajouter le jeu développé à la nouvelle liste des jeux développés
+            jeuxDeveloppes_.elements[jeuxDeveloppes_.nElements] = ptrJeu;
+            jeuxDeveloppes_.nElements++;
         }
+    }
 }
 
 void Developpeur::afficherJeuxDeveloppes()
 {
-    cout << "Les jeux développés par " << paireNomJeux_.first << " sont: " << endl;
+    cout << "Les jeux développés par " << nom_ << " sont : " << endl;
 
-    for (Jeu* ptrJeu : span(paireNomJeux_.second.elements, paireNomJeux_.second.nElements))
+    // Parcourir et afficher tous les jeux de la liste des jeux développés
+    for (Jeu* ptrJeu : span(jeuxDeveloppes_.elements, jeuxDeveloppes_.nElements))
+    {
         cout << "\t" << ptrJeu->titre << endl;
-    // cout << "\n";
+    }
 }
 
 Developpeur::~Developpeur()
 {
-    delete[] paireNomJeux_.second.elements;
+    // Libérer la mémoire du tableau des jeux développés
+    delete[] jeuxDeveloppes_.elements;
 }
